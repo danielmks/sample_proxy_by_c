@@ -10,7 +10,7 @@ gcc sample_proxy.c
 
 
 ## Sequence Diagram
-![UML](images/Sequence_Diagram.png)
+![UML](images/sequence_diagram.png)
 
 
 ## Multi Process 구조
