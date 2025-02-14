@@ -14,12 +14,17 @@
 
 ## 파일 구성
 
+<<<<<<< HEAD
 - `main.c`: 프로그램의 진입점 및 서버 초기화 코드
 - `proxy.c`, `proxy.h`: 프록시 요청 처리 관련 함수 정의
 - `Makefile`: 빌드 스크립트
 - `README.md`: 프로젝트 설명
 - `images/sequence_diagram.png`: 시퀀스 다이어그램
 - `images/proxy_구조.png`: 멀티 프로세스 구조 이미지
+=======
+- `sample_proxy.c` 단일 파일로 구현된 프록시 서버 소스 코드
+- `README.md`: 이 파일
+>>>>>>> e31d7e4513b236a261f17f0b5d284403614bf97a
 
 ## 빌드 및 실행
 
