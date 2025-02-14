@@ -21,7 +21,7 @@
 
 1. **빌드**  
    ```bash
-   gcc -o proxy main.c
+   gcc -o proxy sample_proxy.c
    ```
    
 2. **실행**  
