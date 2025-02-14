@@ -11,6 +11,8 @@
 #include <sys/select.h>
 #include <signal.h>
 
+#define SERVER_PORT 8888
+
 void handle_client(int client_socket) {
     int remote_socket;
     struct sockaddr_in remote_addr;
@@ -210,7 +212,7 @@ int main() {
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(8888);
+    server_addr.sin_port = htons(SERVER_PORT);
 
     if (bind(listen_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         perror("bind");
@@ -224,7 +226,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    printf("프록시 서버가 포트 8888에서 대기 중...\n");
+    printf("프록시 서버가 포트 %d에서 대기 중...\n",SERVER_PORT);
 
     while (1) {
         client_socket = accept(listen_socket, (struct sockaddr*)&client_addr, &client_addr_len);
