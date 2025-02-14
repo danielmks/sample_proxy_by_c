@@ -91,7 +91,7 @@ void handle_client(int client_socket) {
             host_header++;
 
         char host[256];
-        int i = 0;
+        size_t i = 0;
         while (*host_header != '\r' && *host_header != '\n' && *host_header != '\0' && i < sizeof(host) - 1) {
             host[i++] = *host_header++;
         }
