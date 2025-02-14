@@ -7,3 +7,7 @@ gcc sample_proxy.c
 ```
 
 프록시 서버가 포트 8888에서 대기 중... 출력후 서버 가동
+
+
+## Diagram
+![UML](image/diagram.png)
