@@ -10,4 +10,4 @@ gcc sample_proxy.c
 
 
 ## Diagram
-![UML](image/diagram.png)
+![UML](images/diagram.png)
