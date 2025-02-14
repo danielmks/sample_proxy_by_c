@@ -11,11 +11,11 @@
 #include <sys/select.h>
 #include <signal.h>
 
-#define SERVER_PORT         8888       // 프록시 서버가 수신할 포트
 #define BUFFER_SIZE         4096       // 송수신 버퍼 크기
 #define LISTEN_BACKLOG      10         // listen()에서 사용할 대기 큐 길이
 #define DEFAULT_HTTP_PORT   80         // HTTP 기본 포트
 #define DEFAULT_HTTPS_PORT  443        // HTTPS 기본 포트
+#define DEFAULT_SERVER_PORT 8888       // 기본 프록시 서버 포트
 
 void handle_client(int client_socket) {
     int remote_socket;
@@ -191,10 +191,20 @@ void handle_client(int client_socket) {
     close(client_socket);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     int listen_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
+    int server_port = DEFAULT_SERVER_PORT;  // 기본 포트
+
+    // 명령행 인자로 포트 번호를 받으면 해당 값을 사용
+    if (argc > 1) {
+        server_port = atoi(argv[1]);
+        if (server_port <= 0) {
+            fprintf(stderr, "유효하지 않은 포트 번호: %s\n", argv[1]);
+            exit(EXIT_FAILURE);
+        }
+    }
 
     signal(SIGCHLD, SIG_IGN);  // 좀비 프로세스 방지
 
@@ -214,7 +224,7 @@ int main() {
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(SERVER_PORT);
+    server_addr.sin_port = htons(server_port);
 
     if (bind(listen_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         perror("bind");
@@ -228,7 +238,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    printf("프록시 서버가 포트 %d에서 대기 중...\n", SERVER_PORT);
+    printf("프록시 서버가 포트 %d에서 대기 중...\n", server_port);
 
     while (1) {
         client_socket = accept(listen_socket, (struct sockaddr*)&client_addr, &client_addr_len);
