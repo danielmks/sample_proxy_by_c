@@ -11,3 +11,7 @@ gcc sample_proxy.c
 
 ## Diagram
 ![UML](images/diagram.png)
+
+
+## Multi Process 구조
+![Multi-Process](images/proxy 구조.png)
