@@ -1,6 +1,6 @@
-#간단 Proxy Server By C
+# 간단 Proxy Server By C
 
-##실행법
+## 실행법
 ```
 gcc sample_proxy.c
 ./a.out 
