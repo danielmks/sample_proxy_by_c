@@ -14,4 +14,4 @@ gcc sample_proxy.c
 
 
 ## Multi Process 구조
-![Multi-Process](images/proxy 구조.png)
+![Multi-Process](images/proxy_구조.png)
