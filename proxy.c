@@ -1,21 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <errno.h>
-#include <sys/select.h>
-#include <signal.h>
-
-#define BUFFER_SIZE         4096       // 송수신 버퍼 크기
-#define LISTEN_BACKLOG      10         // listen()에서 사용할 대기 큐 길이
-#define DEFAULT_HTTP_PORT   80         // HTTP 기본 포트
-#define DEFAULT_HTTPS_PORT  443        // HTTPS 기본 포트
-#define DEFAULT_SERVER_PORT 8888       // 기본 프록시 서버 포트
+#include "proxy.h"
 
 void handle_client(int client_socket) {
     int remote_socket;
@@ -24,7 +7,7 @@ void handle_client(int client_socket) {
     char buffer[BUFFER_SIZE];
     int n;
 
-    // 1. 클라이언트로부터 초기 요청 메시지를 읽음
+    // 클라이언트로부터 초기 요청 메시지를 읽음
     n = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
     if (n <= 0) {
         close(client_socket);
@@ -32,7 +15,7 @@ void handle_client(int client_socket) {
     }
     buffer[n] = '\0';
 
-    // 2. HTTP CONNECT 방식(HTTPS)인지 확인
+    // HTTP CONNECT 방식(HTTPS)인지 확인
     if (strncmp(buffer, "CONNECT", 7) == 0) {
         // HTTPS 요청인 경우: "CONNECT host:port HTTP/1.1"
         char target[256];
@@ -58,7 +41,7 @@ void handle_client(int client_socket) {
         }
         printf("요청된 호스트 (HTTPS): %s, 포트: %d\n", target, port);
 
-        // 3. 원격 서버 연결
+        // 원격 서버 연결
         he = gethostbyname(target);
         if (he == NULL) {
             perror("gethostbyname");
@@ -85,7 +68,7 @@ void handle_client(int client_socket) {
             return;
         }
 
-        // 4. 연결 성공 시 클라이언트에 응답 전송
+        // 연결 성공 시 클라이언트에 응답 전송
         const char *connection_established = "HTTP/1.1 200 Connection Established\r\n\r\n";
         if (write(client_socket, connection_established, strlen(connection_established)) < 0) {
             perror("write to client");
@@ -143,7 +126,7 @@ void handle_client(int client_socket) {
             return;
         }
 
-        // 이미 읽은 초기 HTTP 요청 메시지를 원격 서버로 전달
+        // HTTP 요청 메시지를 원격 서버로 전달
         if (write(remote_socket, buffer, n) < 0) {
             perror("write to remote");
             close(remote_socket);
@@ -152,7 +135,7 @@ void handle_client(int client_socket) {
         }
     }
 
-    // 5. 양방향 데이터 중계 (select() 이용)
+    // 양방향 데이터 중계 (select() 사용)
     fd_set read_fds;
     int maxfd = (client_socket > remote_socket ? client_socket : remote_socket) + 1;
 
@@ -169,7 +152,7 @@ void handle_client(int client_socket) {
         // 클라이언트 -> 원격 서버
         if (FD_ISSET(client_socket, &read_fds)) {
             n = read(client_socket, buffer, BUFFER_SIZE);
-            if (n <= 0) break;  // 연결 종료
+            if (n <= 0) break;
             if (write(remote_socket, buffer, n) < 0) {
                 perror("write to remote");
                 break;
@@ -179,7 +162,7 @@ void handle_client(int client_socket) {
         // 원격 서버 -> 클라이언트
         if (FD_ISSET(remote_socket, &read_fds)) {
             n = read(remote_socket, buffer, BUFFER_SIZE);
-            if (n <= 0) break;  // 연결 종료
+            if (n <= 0) break;
             if (write(client_socket, buffer, n) < 0) {
                 perror("write to client");
                 break;
@@ -189,73 +172,5 @@ void handle_client(int client_socket) {
 
     close(remote_socket);
     close(client_socket);
-}
-
-int main(int argc, char *argv[]) {
-    int listen_socket, client_socket;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
-    int server_port = DEFAULT_SERVER_PORT;  // 기본 포트
-
-    // 명령행 인자로 포트 번호를 받으면 해당 값을 사용
-    if (argc > 1) {
-        server_port = atoi(argv[1]);
-        if (server_port <= 0) {
-            fprintf(stderr, "유효하지 않은 포트 번호: %s\n", argv[1]);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    signal(SIGCHLD, SIG_IGN);  // 좀비 프로세스 방지
-
-    listen_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_socket < 0) {
-        perror("socket");
-        exit(EXIT_FAILURE);
-    }
-
-    int opt = 1;
-    if (setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        perror("setsockopt");
-        close(listen_socket);
-        exit(EXIT_FAILURE);
-    }
-
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(server_port);
-
-    if (bind(listen_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        perror("bind");
-        close(listen_socket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (listen(listen_socket, LISTEN_BACKLOG) < 0) {
-        perror("listen");
-        close(listen_socket);
-        exit(EXIT_FAILURE);
-    }
-
-    printf("프록시 서버가 포트 %d에서 대기 중...\n", server_port);
-
-    while (1) {
-        client_socket = accept(listen_socket, (struct sockaddr*)&client_addr, &client_addr_len);
-        if (client_socket < 0) {
-            perror("accept");
-            continue;
-        }
-
-        if (fork() == 0) {  // 자식 프로세스 생성
-            close(listen_socket);
-            handle_client(client_socket);
-            exit(0);
-        }
-        close(client_socket);
-    }
-
-    close(listen_socket);
-    return 0;
 }
 
