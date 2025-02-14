@@ -11,17 +11,21 @@
 #include <sys/select.h>
 #include <signal.h>
 
-#define SERVER_PORT 8888
+#define SERVER_PORT         8888       // 프록시 서버가 수신할 포트
+#define BUFFER_SIZE         4096       // 송수신 버퍼 크기
+#define LISTEN_BACKLOG      10         // listen()에서 사용할 대기 큐 길이
+#define DEFAULT_HTTP_PORT   80         // HTTP 기본 포트
+#define DEFAULT_HTTPS_PORT  443        // HTTPS 기본 포트
 
 void handle_client(int client_socket) {
     int remote_socket;
     struct sockaddr_in remote_addr;
     struct hostent *he;
-    char buffer[4096];
+    char buffer[BUFFER_SIZE];
     int n;
 
     // 1. 클라이언트로부터 초기 요청 메시지를 읽음
-    n = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+    n = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
     if (n <= 0) {
         close(client_socket);
         return;
@@ -30,16 +34,16 @@ void handle_client(int client_socket) {
 
     // 2. HTTP CONNECT 방식(HTTPS)인지 확인
     if (strncmp(buffer, "CONNECT", 7) == 0) {
-        // HTTPS 요청인 경우: "CONNECT host:port HTTP/1.1" 형식
+        // HTTPS 요청인 경우: "CONNECT host:port HTTP/1.1"
         char target[256];
-        int port = 443;  // 기본 포트는 443
-        char *p = buffer + 8; // "CONNECT " 이후부터 파싱 시작
+        int port = DEFAULT_HTTPS_PORT;
+        char *p = buffer + 8;  // "CONNECT " 이후부터 파싱 시작
         char *end = strstr(p, " ");
         if (end == NULL) {
             close(client_socket);
             return;
         }
-        *end = '\0';  // 요청라인에서 host:port 부분 분리
+        *end = '\0';  // host:port 분리
 
         // host와 port 파싱 (예: "www.example.com:443")
         char *colon = strchr(p, ':');
@@ -54,7 +58,7 @@ void handle_client(int client_socket) {
         }
         printf("요청된 호스트 (HTTPS): %s, 포트: %d\n", target, port);
 
-        // 3. 파싱한 호스트 정보를 사용해 원격 서버에 연결
+        // 3. 원격 서버 연결
         he = gethostbyname(target);
         if (he == NULL) {
             perror("gethostbyname");
@@ -90,7 +94,7 @@ void handle_client(int client_socket) {
             return;
         }
     } else {
-        // 2. 일반 HTTP 요청인 경우: Host 헤더를 파싱
+        // 일반 HTTP 요청인 경우: Host 헤더 파싱
         char *host_header = strstr(buffer, "Host:");
         if (host_header == NULL) {
             fprintf(stderr, "Host header not found\n");
@@ -105,16 +109,14 @@ void handle_client(int client_socket) {
 
         char host[256];
         int i = 0;
-        while (*host_header != '\r' && *host_header != '\n' && *host_header != '\0' && i < sizeof(host)-1) {
+        while (*host_header != '\r' && *host_header != '\n' && *host_header != '\0' && i < sizeof(host) - 1) {
             host[i++] = *host_header++;
         }
         host[i] = '\0';
 
         printf("요청된 호스트 (HTTP): %s\n", host);
 
-        int port = 80; // HTTP 기본 포트
-
-        // 3. 파싱한 호스트 정보를 사용해 원격 서버에 연결
+        int port = DEFAULT_HTTP_PORT;
         he = gethostbyname(host);
         if (he == NULL) {
             perror("gethostbyname");
@@ -141,7 +143,7 @@ void handle_client(int client_socket) {
             return;
         }
 
-        // 4. 이미 읽은 초기 HTTP 요청 메시지를 원격 서버로 전달
+        // 이미 읽은 초기 HTTP 요청 메시지를 원격 서버로 전달
         if (write(remote_socket, buffer, n) < 0) {
             perror("write to remote");
             close(remote_socket);
@@ -166,7 +168,7 @@ void handle_client(int client_socket) {
 
         // 클라이언트 -> 원격 서버
         if (FD_ISSET(client_socket, &read_fds)) {
-            n = read(client_socket, buffer, sizeof(buffer));
+            n = read(client_socket, buffer, BUFFER_SIZE);
             if (n <= 0) break;  // 연결 종료
             if (write(remote_socket, buffer, n) < 0) {
                 perror("write to remote");
@@ -176,7 +178,7 @@ void handle_client(int client_socket) {
 
         // 원격 서버 -> 클라이언트
         if (FD_ISSET(remote_socket, &read_fds)) {
-            n = read(remote_socket, buffer, sizeof(buffer));
+            n = read(remote_socket, buffer, BUFFER_SIZE);
             if (n <= 0) break;  // 연결 종료
             if (write(client_socket, buffer, n) < 0) {
                 perror("write to client");
@@ -220,13 +222,13 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    if (listen(listen_socket, 10) < 0) {
+    if (listen(listen_socket, LISTEN_BACKLOG) < 0) {
         perror("listen");
         close(listen_socket);
         exit(EXIT_FAILURE);
     }
 
-    printf("프록시 서버가 포트 %d에서 대기 중...\n",SERVER_PORT);
+    printf("프록시 서버가 포트 %d에서 대기 중...\n", SERVER_PORT);
 
     while (1) {
         client_socket = accept(listen_socket, (struct sockaddr*)&client_addr, &client_addr_len);
@@ -235,7 +237,7 @@ int main() {
             continue;
         }
 
-        if (fork() == 0) {
+        if (fork() == 0) {  // 자식 프로세스 생성
             close(listen_socket);
             handle_client(client_socket);
             exit(0);
