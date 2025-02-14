@@ -14,10 +14,8 @@
 
 ## 파일 구성
 
-- `main.c` 또는 단일 파일로 구현된 프록시 서버 소스 코드
+- `sample_proxy.c` 또는 단일 파일로 구현된 프록시 서버 소스 코드
 - `README.md`: 이 파일
-- `images/sequence_diagram.png`: 프록시 서버의 동작 흐름(시퀀스 다이어그램)
-- `images/proxy_구조.png`: 멀티 프로세스 구조 이미지
 
 ## 빌드 및 실행
 
