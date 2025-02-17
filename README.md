@@ -21,7 +21,7 @@
 - `blocked.txt`: 차단할 도메인 목록 파일
 - `Makefile`: 빌드 스크립트
 - `README.md`: 프로젝트 설명
-- `images: README용 이미지 폴더
+- `images`: README용 이미지 폴더
 
 ## 빌드 및 실행
 
