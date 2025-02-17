@@ -6,6 +6,9 @@ int main(int argc, char *argv[]) {
     socklen_t client_addr_len = sizeof(client_addr);
     int server_port = DEFAULT_SERVER_PORT;
 
+    // 차단할 도메인 목록을 blocked.txt 파일에서 로드
+    load_blocked_domains("blocked.txt");
+
     // 명령행 인자로 포트 번호를 받으면 해당 값을 사용
     if (argc > 1) {
         server_port = atoi(argv[1]);
