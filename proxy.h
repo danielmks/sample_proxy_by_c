@@ -14,7 +14,6 @@
 #include <sys/select.h>
 #include <signal.h>
 
-#define SERVER_PORT         8888       // 프록시 서버가 수신할 포트 (기본)
 #define BUFFER_SIZE         4096       // 송수신 버퍼 크기
 #define LISTEN_BACKLOG      10         // listen()에서 사용할 대기 큐 길이
 #define DEFAULT_HTTP_PORT   80         // HTTP 기본 포트
