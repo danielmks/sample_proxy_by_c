@@ -22,6 +22,7 @@
 - `Makefile`: 빌드 스크립트
 - `README.md`: 프로젝트 설명
 - `images`: README용 이미지 폴더
+- `403message.html` : 차단시 페이지 출력
 
 ## 빌드 및 실행
 
