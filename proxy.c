@@ -33,7 +33,7 @@ int is_blocked_domain(const char *host) {
     }
     return 0;
 }
-
+/*
 // 클라이언트에 차단 응답(403 Forbidden) 전송
 void send_blocked_response(int client_socket) {
     const char *blocked_html = "<html><body><h1>Access Blocked</h1><p>This domain is blocked.</p></body></html>";
@@ -47,6 +47,54 @@ void send_blocked_response(int client_socket) {
         "%s", content_length, blocked_html);
     write(client_socket, response, strlen(response));
 }
+*/
+
+// 클라이언트에 차단 응답(403 Forbidden) 전송
+void send_blocked_response(int client_socket) {
+    FILE *fp = fopen("403message.html", "r");
+    if (!fp) {
+        perror("403message.html 파일 열기 실패");
+        return;
+    }
+    
+    // 파일 크기를 구해서 동적 메모리 할당
+    fseek(fp, 0, SEEK_END);
+    long fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    
+    char *blocked_html = malloc(fsize + 1);
+    if (!blocked_html) {
+        perror("메모리 할당 실패");
+        fclose(fp);
+        return;
+    }
+    
+    fread(blocked_html, 1, fsize, fp);
+    blocked_html[fsize] = '\0';
+    fclose(fp);
+
+    // HTTP 응답 헤더 작성
+    char response[1024];
+    snprintf(response, sizeof(response),
+             "HTTP/1.1 403 Forbidden\r\n"
+             "Content-Type: text/html\r\n"
+             "Content-Length: %ld\r\n"
+             "\r\n", fsize);
+    
+    // 헤더 전송
+    if (write(client_socket, response, strlen(response)) < 0) {
+        perror("헤더 전송 실패");
+        free(blocked_html);
+        return;
+    }
+    // 파일 내용 전송
+    if (write(client_socket, blocked_html, fsize) < 0) {
+        perror("본문 전송 실패");
+    }
+    
+    free(blocked_html);
+}
+
 
 void handle_client(int client_socket) {
     int remote_socket;
