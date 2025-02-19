@@ -49,7 +49,3 @@
 ### 시퀀스 다이어그램
 
 ![Sequence Diagram](images/sequence_diagram_v3.png)
-
-### 멀티 프로세스 구조
-
-![Multi-process Architecture](images/proxy_구조.png)
