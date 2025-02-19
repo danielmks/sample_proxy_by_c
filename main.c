@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    printf("프록시 서버가 포트 %d에서 대기 중...\n", server_port);
+    printf("프록시 서버(멀티 프로세스)가 포트 %d에서 대기 중...\n", server_port);
 
     while (1) {
         client_socket = accept(listen_socket, (struct sockaddr*)&client_addr, &client_addr_len);
