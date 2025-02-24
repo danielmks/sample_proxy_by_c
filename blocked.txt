@@ -1,3 +1,3 @@
 www.naver.com
 httpforever.com
-new.com
+www.new.com
